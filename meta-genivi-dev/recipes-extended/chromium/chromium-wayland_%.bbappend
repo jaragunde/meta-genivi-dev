@@ -1,9 +1,14 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
+DEPENDS += "libgbm mesa"
+
 SRC_URI += "\
     file://chromium.app \
     file://chromium.service \
+    file://fix-egl-version.patch \
 "
+
+LDFLAGS_append_m3ulcb = " -latomic"
 
 # FIXME: workaround for https://at.projects.genivi.org/jira/browse/LM-2
 CHROMIUM_EXTRA_ARGS_append = " --window-size=1728,1080"
@@ -24,6 +29,10 @@ do_install_append() {
 # Raspberry Pi workarounds
 
 COMPATIBLE_MACHINE_armv7ve = "(.*)"
+
+# Renesas workarounds
+
+COMPATIBLE_MACHINE_m3ulcb = "(.*)"
 
 # Apply same TUNE_FEATURES as in an armv7a build
 ARMFPABI_armv7ve = "${@bb.utils.contains('TUNE_FEATURES', 'callconvention-hard', 'arm_float_abi=hard', 'arm_float_abi=softfp', d)}"
