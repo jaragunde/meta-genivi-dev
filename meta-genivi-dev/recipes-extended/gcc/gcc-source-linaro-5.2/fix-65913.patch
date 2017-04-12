@@ -1,0 +1,101 @@
+Index: gcc-linaro-5.2-2015.11-2/gcc/builtins.c
+===================================================================
+--- gcc-linaro-5.2-2015.11-2.orig/gcc/builtins.c
++++ gcc-linaro-5.2-2015.11-2/gcc/builtins.c
+@@ -5694,8 +5694,20 @@ fold_builtin_atomic_always_lock_free (tr
+   mode = mode_for_size (size, MODE_INT, 0);
+   mode_align = GET_MODE_ALIGNMENT (mode);
+ 
+-  if (TREE_CODE (arg1) == INTEGER_CST && INTVAL (expand_normal (arg1)) == 0)
+-    type_align = mode_align;
++  if (TREE_CODE (arg1) == INTEGER_CST)
++    {
++      unsigned HOST_WIDE_INT val = UINTVAL (expand_normal (arg1));
++
++      /* Either this argument is null, or it's a fake pointer encoding
++         the alignment of the object.  */
++      val = val & -val;
++      val *= BITS_PER_UNIT;
++
++      if (val == 0 || mode_align < val)
++        type_align = mode_align;
++      else
++        type_align = val;
++    }
+   else
+     {
+       tree ttype = TREE_TYPE (arg1);
+Index: gcc-linaro-5.2-2015.11-2/libstdc++-v3/include/bits/atomic_base.h
+===================================================================
+--- gcc-linaro-5.2-2015.11-2.orig/libstdc++-v3/include/bits/atomic_base.h
++++ gcc-linaro-5.2-2015.11-2/libstdc++-v3/include/bits/atomic_base.h
+@@ -350,17 +350,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+       bool
+       is_lock_free() const noexcept
+       {
+-	// Produce a fake, minimally aligned pointer.
+-	void *__a = reinterpret_cast<void *>(-__alignof(_M_i));
+-	return __atomic_is_lock_free(sizeof(_M_i), __a);
++        // Use a fake, minimally aligned pointer.
++        return __atomic_is_lock_free(sizeof(_M_i),
++           reinterpret_cast<void *>(-__alignof(_M_i)));
+       }
+ 
+       bool
+       is_lock_free() const volatile noexcept
+       {
+-	// Produce a fake, minimally aligned pointer.
+-	void *__a = reinterpret_cast<void *>(-__alignof(_M_i));
+-	return __atomic_is_lock_free(sizeof(_M_i), __a);
++        // Use a fake, minimally aligned pointer.
++        return __atomic_is_lock_free(sizeof(_M_i),
++           reinterpret_cast<void *>(-__alignof(_M_i)));
+       }
+ 
+       _GLIBCXX_ALWAYS_INLINE void
+@@ -666,16 +666,16 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+       is_lock_free() const noexcept
+       {
+ 	// Produce a fake, minimally aligned pointer.
+-	void *__a = reinterpret_cast<void *>(-__alignof(_M_p));
+-	return __atomic_is_lock_free(sizeof(_M_p), __a);
++        return __atomic_is_lock_free(sizeof(_M_p),
++           reinterpret_cast<void *>(-__alignof(_M_p)));
+       }
+ 
+       bool
+       is_lock_free() const volatile noexcept
+       {
+ 	// Produce a fake, minimally aligned pointer.
+-	void *__a = reinterpret_cast<void *>(-__alignof(_M_p));
+-	return __atomic_is_lock_free(sizeof(_M_p), __a);
++        return __atomic_is_lock_free(sizeof(_M_p),
++           reinterpret_cast<void *>(-__alignof(_M_p)));
+       }
+ 
+       _GLIBCXX_ALWAYS_INLINE void
+Index: gcc-linaro-5.2-2015.11-2/libstdc++-v3/include/std/atomic
+===================================================================
+--- gcc-linaro-5.2-2015.11-2.orig/libstdc++-v3/include/std/atomic
++++ gcc-linaro-5.2-2015.11-2/libstdc++-v3/include/std/atomic
+@@ -208,16 +208,16 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
+       is_lock_free() const noexcept
+       {
+ 	// Produce a fake, minimally aligned pointer.
+-	void *__a = reinterpret_cast<void *>(-__alignof(_M_i));
+-	return __atomic_is_lock_free(sizeof(_M_i), __a);
++        return __atomic_is_lock_free(sizeof(_M_i),
++           reinterpret_cast<void *>(-__alignof(_M_i)));
+       }
+ 
+       bool
+       is_lock_free() const volatile noexcept
+       {
+ 	// Produce a fake, minimally aligned pointer.
+-	void *__a = reinterpret_cast<void *>(-__alignof(_M_i));
+-	return __atomic_is_lock_free(sizeof(_M_i), __a);
++        return __atomic_is_lock_free(sizeof(_M_i),
++          reinterpret_cast<void *>(-__alignof(_M_i)));
+       }
+ 
+       void
