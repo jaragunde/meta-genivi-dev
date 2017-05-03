@@ -25,12 +25,12 @@ do_install_append() {
 
 COMPATIBLE_MACHINE_armv7ve = "(.*)"
 
-# Renesas workarounds
-
-COMPATIBLE_MACHINE_m3ulcb = "(.*)"
-
 # Apply same TUNE_FEATURES as in an armv7a build
 ARMFPABI_armv7ve = "${@bb.utils.contains('TUNE_FEATURES', 'callconvention-hard', 'arm_float_abi=hard', 'arm_float_abi=softfp', d)}"
 
 # Remove cortexa7 optimization that conflicts with Chromium's hardcoded ARM flags
 TUNE_FEATURES_remove_armv7ve = "cortexa7"
+
+# R-Car Gen. 3 workarounds
+
+COMPATIBLE_MACHINE_aarch64 = "(.*)"
